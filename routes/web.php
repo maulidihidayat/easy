@@ -30,19 +30,19 @@ Route::post('/feedback', [FeedbackController::class, 'store'])->name('feedback.s
 Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
 
 // WhatsApp notification routes
-Route::get('/bookings/{booking}/whatsapp/admin', [BookingController::class, 'getAdminWhatsAppUrl'])->name('bookings.whatsapp.admin');
-Route::get('/bookings/{booking}/whatsapp/customer', [BookingController::class, 'getCustomerWhatsAppUrl'])->name('bookings.whatsapp.customer');
+// Route::get('/bookings/{booking}/whatsapp/admin', [BookingController::class, 'getAdminWhatsAppUrl'])->name('bookings.whatsapp.admin');
+// Route::get('/bookings/{booking}/whatsapp/customer', [BookingController::class, 'getCustomerWhatsAppUrl'])->name('bookings.whatsapp.customer');
 
 // Booking approval routes
-Route::post('/bookings/{booking}/approve', [App\Http\Controllers\BookingApprovalController::class, 'approve'])->name('bookings.approve');
-Route::post('/bookings/{booking}/reject', [App\Http\Controllers\BookingApprovalController::class, 'reject'])->name('bookings.reject');
-Route::get('/bookings/{booking}/whatsapp/approval', [App\Http\Controllers\BookingApprovalController::class, 'getApprovalWhatsAppUrl'])->name('bookings.whatsapp.approval');
+// Route::post('/bookings/{booking}/approve', [App\Http\Controllers\BookingApprovalController::class, 'approve'])->name('bookings.approve');
+// Route::post('/bookings/{booking}/reject', [App\Http\Controllers\BookingApprovalController::class, 'reject'])->name('bookings.reject');
+// Route::get('/bookings/{booking}/whatsapp/approval', [App\Http\Controllers\BookingApprovalController::class, 'getApprovalWhatsAppUrl'])->name('bookings.whatsapp.approval');
 
 // Admin pages
-Route::get('/admin/bookings', function () {
-    return view('admin.bookings');
-})->name('admin.bookings');
+// Route::get('/admin/bookings', function () {
+//     return view('admin.bookings');
+// })->name('admin.bookings');
 
 // API routes
-Route::get('/api/bookings', [App\Http\Controllers\BookingApiController::class, 'index'])->name('api.bookings');
-Route::get('/api/bookings/{booking}', [App\Http\Controllers\BookingApiController::class, 'show'])->name('api.bookings.show');
+// Route::get('/api/bookings', [App\Http\Controllers\BookingApiController::class, 'index'])->name('api.bookings');
+// Route::get('/api/bookings/{booking}', [App\Http\Controllers\BookingApiController::class, 'show'])->name('api.bookings.show');
