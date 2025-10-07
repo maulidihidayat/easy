@@ -7,13 +7,14 @@ use App\Models\Feedback;
 use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Columns\Layout\View;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
-use Filament\Tables\Actions\ViewAction;
-use Filament\Tables\Actions\EditAction;
-use Filament\Tables\Actions\DeleteAction;
-use Filament\Tables\Actions\BulkActionGroup;
-use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
 use Illuminate\Database\Eloquent\Builder;
 
 class FeedbackResource extends Resource
@@ -84,15 +85,18 @@ class FeedbackResource extends Resource
                 SelectFilter::make('rating')->options([
                     1 => '1',
                     2 => '2',
-                    3 => '3',
+                    3 => '3',                   
                     4 => '4',
                     5 => '5',
                 ]),
             ])
 
             ->actions([
-                ViewAction::make(),
+                // ViewAction::make(),
+                // EditAction::make(),
+                // DeleteAction::make(),
                 EditAction::make(),
+                ViewAction::make(),
                 DeleteAction::make(),
             ])
             ->bulkActions([

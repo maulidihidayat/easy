@@ -21,8 +21,8 @@ class Dashboard extends BaseDashboard
         return [
             StatsOverviewWidget::class,
             BookingChartWidget::class,
-            FeedbackRatingWidget::class,
             ServiceTypeWidget::class,
+            FeedbackRatingWidget::class,
             RecentBookingsWidget::class,
         ];
     }
