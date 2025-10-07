@@ -10,20 +10,19 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class StatsOverviewWidget extends BaseWidget
 {
-    protected static ?string $pollingInterval = '30s';
+    // ✅ Non-static dan string interval (contoh: '30s', '1m', dll)
+    protected ?string $pollingInterval = '30s';
 
-    protected function getCards(): array
+    protected function getStats(): array
     {
-        $totalBookings = Booking::query()->count();
-        $approvedBookings = Booking::query()->where('status', 'approved')->count();
-        $pendingBookings = Booking::query()->where('status', 'pending')->count();
-        $todayBookings = Booking::query()->whereDate('created_at', now()->toDateString())->count();
+        $totalBookings = Booking::count();
+        $approvedBookings = Booking::where('status', 'approved')->count();
+        $pendingBookings = Booking::where('status', 'pending')->count();
+        $todayBookings = Booking::whereDate('created_at', now()->toDateString())->count();
 
-        $totalPortfolio = Portfolio::query()->count();
+        $totalPortfolio = Portfolio::count();
 
-        $avgRating = (float) (Feedback::query()
-            ->where('status', 'approved')
-            ->avg('rating') ?? 0);
+        $avgRating = (float) (Feedback::where('status', 'approved')->avg('rating') ?? 0);
 
         return [
             Stat::make('Total Bookings', (string) $totalBookings)

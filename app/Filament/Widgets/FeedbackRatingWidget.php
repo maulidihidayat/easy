@@ -7,7 +7,8 @@ use Filament\Widgets\PieChartWidget;
 
 class FeedbackRatingWidget extends PieChartWidget
 {
-    protected static ?string $heading = 'Feedback Ratings (Approved)';
+    // Properti $heading harus non-static agar sesuai dengan parent class (PieChartWidget/ChartWidget)
+    protected ?string $heading = 'Feedback Ratings (Approved)';
 
     protected function getData(): array
     {

@@ -13,6 +13,9 @@ class RecentBookingsWidget extends BaseWidget
 
     protected int | string | array $columnSpan = 'full';
 
+    // ✅ Tambahkan auto-refresh agar widget tidak statis
+    protected static ?int $pollingInterval = 10; // refresh setiap 10 detik
+
     public function table(Tables\Table $table): Tables\Table
     {
         return $table
@@ -29,6 +32,9 @@ class RecentBookingsWidget extends BaseWidget
 
     protected function getQuery(): Builder
     {
-        return Booking::query()->latest();
+        // ✅ Query dinamis: ambil 10 booking terbaru yang terus diperbarui
+        return Booking::query()
+            ->orderByDesc('created_at')
+            ->limit(10);
     }
 }
