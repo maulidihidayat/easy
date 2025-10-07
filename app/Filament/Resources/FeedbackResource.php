@@ -4,22 +4,31 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\FeedbackResource\Pages;
 use App\Models\Feedback;
-use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
- 
+use Filament\Tables\Actions\ViewAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteBulkAction;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 
 class FeedbackResource extends Resource
 {
     protected static ?string $model = Feedback::class;
 
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-chat-bubble-left-right';
+    // protected static UnitEnum | string | null $navigationGroup = 'Customer Interactions';
+
     protected static ?string $navigationLabel = 'Feedback';
+
     protected static ?string $modelLabel = 'Feedback';
+
     protected static ?string $pluralModelLabel = 'Feedback';
+
     protected static ?int $navigationSort = 2;
 
     public static function form(Schema $schema): Schema
@@ -32,8 +41,12 @@ class FeedbackResource extends Resource
 
             Schema::section('Feedback')->schema([
                 Schema::select('rating')->required()->options([
-                    1 => '1', 2 => '2', 3 => '3', 4 => '4', 5 => '5',
-                ])->label('Rating'),
+                    1 => '1',
+                    2 => '2',
+                    3 => '3',
+                    4 => '4',
+                    5 => '5',
+                ])->label('Rating')->native(false),
                 Schema::textarea('message')->required()->rows(4)->label('Message'),
                 Schema::fileUpload('photo_path')->image()->directory('feedback')->visibility('public')->label('Photo'),
             ]),
@@ -44,7 +57,7 @@ class FeedbackResource extends Resource
                     'approved' => 'Approved',
                     'rejected' => 'Rejected',
                     'featured' => 'Featured',
-                ])->default('pending')->label('Status'),
+                ])->default('pending')->label('Status')->native(false),
             ]),
         ]);
     }
@@ -69,10 +82,24 @@ class FeedbackResource extends Resource
                     'featured' => 'Featured',
                 ]),
                 SelectFilter::make('rating')->options([
-                    1 => '1', 2 => '2', 3 => '3', 4 => '4', 5 => '5',
+                    1 => '1',
+                    2 => '2',
+                    3 => '3',
+                    4 => '4',
+                    5 => '5',
                 ]),
             ])
-            
+
+            ->actions([
+                ViewAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
+            ])
+            ->bulkActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                ]),
+            ])
             ->defaultSort('created_at', 'desc');
     }
 

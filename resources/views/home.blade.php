@@ -134,7 +134,7 @@
                 @forelse(($feedbacks ?? []) as $fb)
                 <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                     <div class="flex items-center gap-3 mb-3">
-                        @if($fb->photo_path)
+                        @if($fb && is_object($fb) && $fb->photo_path)
                         <img src="{{ asset('storage/'.$fb->photo_path) }}" alt="{{ $fb->name }}" class="h-10 w-10 rounded-full object-cover">
                         @else
                         <span class="inline-flex h-10 w-10 rounded-full bg-pink-100"></span>
@@ -178,17 +178,23 @@
             <!-- Portfolio Grid -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 @forelse(($portfolios ?? []) as $item)
-                <div class="group relative overflow-hidden rounded-2xl border border-gray-100 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2" data-category="{{ strtolower($item->category) }}">
+                @if($item && is_object($item))
+                <div class="group relative overflow-hidden rounded-2xl border border-gray-100 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2" data-category="{{ strtolower($item->category ?? '') }}">
                     <div class="aspect-w-4 aspect-h-3 h-64 bg-gray-100 overflow-hidden">
-                        <img src="{{ asset('storage/'.$item->image_path) }}" alt="{{ $item->title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                        @if(isset($item->image_path))
+                            <img src="{{ asset('storage/'.$item->image_path) }}" alt="{{ $item->title ?? '' }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                        @else
+                            <div class="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500">No Image</div>
+                        @endif
                     </div>
                     <div class="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all duration-300 flex items-center justify-center">
                         <div class="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-center px-4">
-                            <h3 class="text-xl font-semibold mb-2">{{ $item->title }}</h3>
-                            <p class="text-sm">{{ $item->category }}</p>
+                            <h3 class="text-xl font-semibold mb-2">{{ $item->title ?? '' }}</h3>
+                            <p class="text-sm">{{ $item->category ?? '' }}</p>
                         </div>
                     </div>
                 </div>
+                @endif
                 @empty
                 <div class="col-span-full text-center text-gray-500">Belum ada portfolio yang dipublikasikan.</div>
                 @endforelse

@@ -4,71 +4,94 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\PortfolioResource\Pages;
 use App\Models\Portfolio;
-use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
- 
+use Filament\Tables\Actions\ViewAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteBulkAction;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 
 class PortfolioResource extends Resource
 {
     protected static ?string $model = Portfolio::class;
 
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-photo';
+
     protected static ?string $navigationLabel = 'Portfolio';
+
     protected static ?string $modelLabel = 'Portfolio Item';
+
     protected static ?string $pluralModelLabel = 'Portfolio';
+
     protected static ?int $navigationSort = 3;
 
     public static function form(Schema $schema): Schema
     {
         return $schema->schema([
-            Schema::section('Portfolio Information')->schema([
-                Schema::textInput('title')->required()->maxLength(255)->label('Title'),
-                Schema::select('category')->required()->options([
-                    'wedding' => 'Wedding',
-                    'portrait' => 'Portrait',
-                    'event' => 'Event',
-                    'commercial' => 'Commercial',
-                    'lifestyle' => 'Lifestyle',
-                    'nature' => 'Nature',
-                    'street' => 'Street Photography',
-                    'other' => 'Other',
-                ])->label('Category'),
-                Schema::textarea('description')->rows(4)->label('Description'),
-            ])->columns(2),
-
-            Schema::section('Media & Settings')->schema([
-                Schema::fileUpload('image_path')->image()->directory('portfolio')->visibility('public')->required()->label('Image'),
-                Schema::toggle('is_published')->default(true)->label('Published'),
-            ])->columns(2),
-        ]);
+            Schema::textInput('title')
+                ->label('Title')
+                ->required()
+                ->maxLength(255),
+            Schema::textInput('category')
+                ->label('Category')
+                ->datalist([
+                    'Prewedding',
+                    'Wedding',
+                    'Graduation',
+                    'Brithday',
+                ])
+                ->maxLength(100),
+            Schema::fileUpload('image_path')
+                ->label('Image')
+                ->image()
+                ->directory('portfolio')
+                ->visibility('public')
+                ->imageEditor(),
+            Schema::textarea('description')
+                ->label('Description')
+                ->rows(4),
+            Schema::toggle('is_published')
+                ->label('Published')
+                ->default(true),
+        ])->columns(2);
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('image_path')->square()->extraAttributes(['class' => 'text-lg'])->label('Image'),
-                Tables\Columns\TextColumn::make('title')->sortable()->searchable()->label('Title'),
-                Tables\Columns\TextColumn::make('category')->badge()->label('Category'),
-                Tables\Columns\IconColumn::make('is_published')->boolean()->label('Published'),
-                Tables\Columns\TextColumn::make('created_at')->dateTime()->sortable()->label('Created'),
+                Tables\Columns\ImageColumn::make('image_path')->label('Image')->circular(),
+                Tables\Columns\TextColumn::make('title')->label('Title')->searchable()->sortable(),
+                Tables\Columns\TextColumn::make('category')->label('Category')->badge()->sortable(),
+                Tables\Columns\IconColumn::make('is_published')->label('Published')->boolean(),
+                Tables\Columns\TextColumn::make('created_at')->label('Created')->dateTime()->sortable(),
             ])
             ->filters([
-                SelectFilter::make('category')->options([
-                    'wedding' => 'Wedding',
-                    'portrait' => 'Portrait',
-                    'event' => 'Event',
-                    'commercial' => 'Commercial',
-                    'lifestyle' => 'Lifestyle',
-                    'nature' => 'Nature',
-                    'street' => 'Street Photography',
-                    'other' => 'Other',
+                SelectFilter::make('category')
+                    ->options([
+                        'Prewedding' => 'Prewedding',
+                        'Wedding' => 'Wedding',
+                        'Graduation' => 'Graduation',
+                        'Brithday' => 'Brithday',
+                    ]),
+                Tables\Filters\TernaryFilter::make('is_published')
+                    ->label('Published')
+                    ->boolean(),
+            ])
+            ->actions([
+                ViewAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
+            ])
+            ->bulkActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
-                Tables\Filters\TernaryFilter::make('is_published')->label('Published'),
             ])
             ->defaultSort('created_at', 'desc');
     }

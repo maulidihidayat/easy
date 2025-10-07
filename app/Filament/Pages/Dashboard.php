@@ -19,14 +19,14 @@ class Dashboard extends BaseDashboard
     public function getWidgets(): array
     {
         return [
-            // StatsOverviewWidget::class,
-            // BookingChartWidget::class,
-            // FeedbackRatingWidget::class,
-            // ServiceTypeWidget::class,
-            // RecentBookingsWidget::class,
+            StatsOverviewWidget::class,
+            BookingChartWidget::class,
+            FeedbackRatingWidget::class,
+            ServiceTypeWidget::class,
+            RecentBookingsWidget::class,
         ];
     }
-    
+
     // Jika Anda menggunakan Filament v3, Anda juga bisa menempatkan widget di sini 
     // atau biarkan Filament mengelola widget Anda melalui pengurutan (sort) yang sudah Anda definisikan di masing-masing widget.
     // Kami mempertahankan metode ini agar konsisten dengan niat kode yang Anda berikan.
