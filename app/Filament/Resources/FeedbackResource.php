@@ -6,8 +6,8 @@ use App\Filament\Resources\FeedbackResource\Pages;
 use App\Models\Feedback;
 use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
+use Filament\Forms;
 use Filament\Tables;
-use Filament\Tables\Columns\Layout\View;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Filament\Actions\EditAction;
@@ -35,31 +35,23 @@ class FeedbackResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->schema([
-            Schema::section('Customer Information')->schema([
-                Schema::textInput('name')->required()->maxLength(255)->label('Name'),
-                Schema::textInput('email')->email()->maxLength(255)->label('Email'),
-            ])->columns(2),
-
-            Schema::section('Feedback')->schema([
-                Schema::select('rating')->required()->options([
+                Forms\Components\TextInput::make('name')->required()->maxLength(255)->label('Name'),
+                Forms\Components\TextInput::make('email')->email()->maxLength(255)->label('Email'),
+                Forms\Components\Select::make('rating')->required()->options([
                     1 => '1',
                     2 => '2',
                     3 => '3',
                     4 => '4',
                     5 => '5',
                 ])->label('Rating')->native(false),
-                Schema::textarea('message')->required()->rows(4)->label('Message'),
-                Schema::fileUpload('photo_path')->image()->directory('feedback')->visibility('public')->label('Photo'),
-            ]),
-
-            Schema::section('Admin')->schema([
-                Schema::select('status')->required()->options([
+                Forms\Components\Select::make('status')->required()->options([
                     'pending' => 'Pending Review',
                     'approved' => 'Approved',
                     'rejected' => 'Rejected',
                     'featured' => 'Featured',
-                ])->default('pending')->label('Status')->native(false),
-            ]),
+                    ])->label('Status')->native(false),
+                Forms\Components\FileUpload::make('photo_path')->image()->directory('feedback')->visibility('public')->label('Photo')->disk('public'),
+                    Forms\Components\Textarea::make('message')->required()->label('Message'),
         ]);
     }
 

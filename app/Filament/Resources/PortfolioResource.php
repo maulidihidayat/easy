@@ -6,6 +6,8 @@ use App\Filament\Resources\PortfolioResource\Pages;
 use App\Models\Portfolio;
 use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
+use Filament\Forms;
+use Filament\Forms\Form;
 use Filament\Tables;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -33,39 +35,50 @@ class PortfolioResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->schema([
-            Schema::textInput('title')
-                ->label('Title')
-                ->required()
-                ->maxLength(255),
-            Schema::textInput('category')
-                ->label('Category')
-                ->datalist([
-                    'Prewedding',
-                    'Wedding',
-                    'Graduation',
-                    'Brithday',
-                ])
-                ->maxLength(100),
-            Schema::fileUpload('image_path')
-                ->label('Image')
-                ->image()
-                ->directory('portfolio')
-                ->visibility('public')
-                ->imageEditor(),
-            Schema::textarea('description')
-                ->label('Description')
-                ->rows(4),
-            Schema::toggle('is_published')
-                ->label('Published')
-                ->default(true),
-        ])->columns(2);
+        Forms\Components\TextInput::make('Title')::make('title')
+            ->label('Title')
+            ->required()
+            ->maxLength(255),
+
+        Forms\Components\TextInput::make('Category')::make('category')
+            ->label('Category')
+            ->datalist([
+                'Prewedding',
+                'Wedding',
+                'Graduation',
+                'Birthday',
+            ])
+            ->maxLength(100),
+
+        Forms\Components\FileUpload::make('image_path')
+            ->label('Image')
+            ->image()
+            ->directory('portfolio')
+            ->visibility('public')
+            ->disk('public')
+            ->imageEditor(),
+
+        Forms\Components\Textarea::make('description')
+            ->label('Description')
+            ->rows(4),
+
+        Forms\Components\Select::make('is_published')
+    ->label('Publication Status')
+    ->options([
+        1 => 'Published',
+        0 => 'Draft',
+    ])
+    ->default(1)
+    ->required(),
+
+    ])->columns(2);
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('image_path')->label('Image')->circular(),
+                Tables\Columns\ImageColumn::make('image_path')->label('Image')->circular()->disk('public'),
                 Tables\Columns\TextColumn::make('title')->label('Title')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('category')->label('Category')->badge()->sortable(),
                 Tables\Columns\IconColumn::make('is_published')->label('Published')->boolean(),

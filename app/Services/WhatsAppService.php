@@ -42,7 +42,7 @@ class WhatsAppService
         
         $message .= "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
         $message .= "⏰ *Waktu Booking:* " . $booking->created_at->format('d M Y, H:i') . "\n";
-        $message .= "🆔 *ID Booking:* #" . $booking->id . "\n\n";
+        // $message .= "🆔 *ID Booking:* #" . $booking->id . "\n\n";
         
         $message .= "💡 *Langkah Selanjutnya:*\n";
         $message .= "1. Konfirmasi ketersediaan tanggal\n";

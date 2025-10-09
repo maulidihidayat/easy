@@ -6,6 +6,7 @@ use App\Filament\Resources\BookingResource\Pages;
 use App\Models\Booking;
 use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
+use Filament\Forms;
 use Filament\Tables;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -33,25 +34,22 @@ class BookingResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->schema([
-            Schema::section('Customer Information')->schema([
-                Schema::textInput('full_name')
+                Forms\Components\TextInput::make('full_name')
                     ->label('Full Name')
                     ->required()
                     ->maxLength(255),
-                Schema::textInput('phone')
+                Forms\Components\TextInput::make('phone')
                     ->label('Phone')
                     ->tel()
                     ->required()
                     ->maxLength(30),
-                Schema::textInput('email')
+                Forms\Components\TextInput::make('email')
                     ->label('Email')
                     ->email()
                     ->required()
                     ->maxLength(255),
-            ])->columns(3),
 
-            Schema::section('Booking Details')->schema([
-                Schema::select('service_type')
+                Forms\Components\Select::make('service_type')
                     ->label('Service Type')
                     ->required()
                     ->options([
@@ -63,35 +61,32 @@ class BookingResource extends Resource
                         'Custom Package' => 'Custom Package',
                     ])
                     ->native(false),
-                Schema::datePicker('event_date')
+                Forms\Components\DatePicker::make('event_date')
                     ->label('Event Date')
                     ->native(false),
-                Schema::textInput('location')
+                Forms\Components\TextInput::make('location')
                     ->label('Location')
                     ->maxLength(255),
-                Schema::textarea('details')
+                Forms\Components\Textarea::make('details')
                     ->label('Details')
                     ->rows(4),
-            ])->columns(2),
 
-            Schema::section('Admin')->schema([
-                Schema::select('status')
-                    ->label('Status')
-                    ->default('pending')
-                    ->options([
-                        'pending' => 'Pending',
-                        'approved' => 'Approved',
-                        'rejected' => 'Rejected',
-                    ])
-                    ->native(false),
-                Schema::dateTimePicker('approved_at')
+                    Forms\Components\Textarea::make('admin_notes')
+                    ->label('Admin Notes')
+                    ->rows(3),
+                    Forms\Components\DateTimePicker::make('approved_at')
                     ->label('Approved At')
                     ->native(false)
                     ->seconds(false),
-                Schema::textarea('admin_notes')
-                    ->label('Admin Notes')
-                    ->rows(3),
-            ])->columns(2)->collapsible(),
+                    Forms\Components\Select::make('status')
+                        ->label('Status')
+                        ->default('pending')
+                        ->options([
+                            'pending' => 'Pending',
+                            'approved' => 'Approved',
+                            'rejected' => 'Rejected',
+                        ])
+                        ->native(false),
         ]);
     }
 
