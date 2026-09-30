@@ -788,16 +788,130 @@
                                     </select>
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-semibold text-stone-700 mb-1.5">Perkiraan Tanggal Acara</label>
-                                    <input name="event_date" value="{{ old('event_date') }}" type="date"
-                                        class="w-full px-4 py-3 bg-[#FAF8F5] border border-stone-200 rounded-xl text-sm focus:ring-2 focus:ring-[#33736f] focus:bg-white focus:outline-none transition">
-                                </div>
-
-                                <div class="md:col-span-2">
                                     <label class="block text-xs font-semibold text-stone-700 mb-1.5">Lokasi Pelaksanaan</label>
                                     <input name="location" value="{{ old('location') }}" type="text"
                                         class="w-full px-4 py-3 bg-[#FAF8F5] border border-stone-200 rounded-xl text-sm focus:ring-2 focus:ring-[#33736f] focus:bg-white focus:outline-none transition"
                                         placeholder="Contoh: Pantai Senggigi, Studio Easy Project, Hotel Grand, dll">
+                                </div>
+
+                                <!-- Kalender Interaktif Ketersediaan Jadwal -->
+                                <div class="md:col-span-2">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <label class="block text-xs font-bold text-stone-900 uppercase tracking-wider">
+                                            Pilih Tanggal Acara / Sesi Foto <span class="text-rose-500">*</span>
+                                        </label>
+                                        <span class="text-[11px] text-stone-500 flex items-center gap-1.5 font-medium">
+                                            <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span> Kalender Live Ketersediaan
+                                        </span>
+                                    </div>
+
+                                    <!-- Hidden input for form submission -->
+                                    <input type="hidden" name="event_date" id="selected-event-date" value="{{ old('event_date') }}" required>
+
+                                    <!-- Selected Date Status Banner -->
+                                    <div id="date-status-banner" class="mb-3.5 p-3.5 rounded-xl border transition-all flex items-center justify-between {{ old('event_date') ? 'bg-[#e8f4f3] border-[#33736f]/40 text-[#255855]' : 'bg-[#FAF8F5] border-stone-200 text-stone-600' }}">
+                                        <div class="flex items-center gap-3">
+                                            <div id="date-status-icon" class="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm shadow-xs {{ old('event_date') ? 'bg-[#33736f] text-white' : 'bg-stone-200 text-stone-500' }}">
+                                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2v-8H3v8a2 2 0 002 2z" />
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <p id="date-selected-label" class="text-xs font-bold leading-tight text-stone-900">
+                                                    {{ old('event_date') ? 'Tanggal Terpilih: ' . \Carbon\Carbon::parse(old('event_date'))->translatedFormat('l, d F Y') : 'Belum Ada Tanggal yang Dipilih' }}
+                                                </p>
+                                                <p id="date-status-desc" class="text-[11px] text-stone-500 mt-0.5">
+                                                    {{ old('event_date') ? 'Jadwal siap dan tanggal terkunci untuk reservasi Anda.' : 'Silakan klik tanggal hijau yang tersedia pada kalender di bawah.' }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div id="date-badge-status">
+                                            @if(old('event_date'))
+                                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">Tersedia ✓</span>
+                                            @else
+                                                <span class="px-2.5 py-1 rounded-full text-[10px] font-medium bg-stone-100 text-stone-500">Pilih Tanggal</span>
+                                            @endif
+                                        </div>
+                                    </div>
+
+                                    <!-- Conflict Warning Alert (Muncul jika user mengklik tanggal merah/terisi) -->
+                                    <div id="date-conflict-warning" class="hidden mb-3.5 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs transition-all">
+                                        <div class="flex items-start gap-3">
+                                            <div class="w-8 h-8 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center flex-shrink-0 font-bold">
+                                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                                </svg>
+                                            </div>
+                                            <div class="flex-1">
+                                                <h5 class="font-bold text-rose-900 text-xs">Jadwal Tanggal Ini Sudah Terisi / Penuh!</h5>
+                                                <p id="conflict-date-text" class="text-[11px] text-rose-700 mt-0.5 leading-relaxed">
+                                                    Klien lain telah memesan jadwal sesi foto pada tanggal ini. Mohon pilih tanggal lain yang masih bertanda <strong>Tersedia (Hijau)</strong> agar jadwal tidak bertabrakan.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Interactive Calendar Card -->
+                                    <div class="bg-white border border-stone-200 rounded-2xl p-4 sm:p-5 shadow-xs">
+                                        <!-- Header Navigasi Bulan -->
+                                        <div class="flex items-center justify-between mb-4 pb-3 border-b border-stone-100">
+                                            <button type="button" id="cal-prev-btn" class="w-8 h-8 rounded-xl bg-[#FAF8F5] border border-stone-200 hover:bg-stone-100 text-stone-700 flex items-center justify-center transition shadow-xs">
+                                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                                                </svg>
+                                            </button>
+                                            <div class="text-center">
+                                                <h4 id="cal-month-title" class="font-bold text-stone-900 text-sm capitalize">
+                                                    -
+                                                </h4>
+                                                <p class="text-[10px] text-stone-500">Klik tanggal yang tersedia untuk memilih</p>
+                                            </div>
+                                            <button type="button" id="cal-next-btn" class="w-8 h-8 rounded-xl bg-[#FAF8F5] border border-stone-200 hover:bg-stone-100 text-stone-700 flex items-center justify-center transition shadow-xs">
+                                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                                </svg>
+                                            </button>
+                                        </div>
+
+                                        <!-- Nama Hari -->
+                                        <div class="grid grid-cols-7 gap-1 text-center mb-2">
+                                            <span class="text-[10px] font-bold uppercase tracking-wider text-rose-500 py-1">Min</span>
+                                            <span class="text-[10px] font-bold uppercase tracking-wider text-stone-600 py-1">Sen</span>
+                                            <span class="text-[10px] font-bold uppercase tracking-wider text-stone-600 py-1">Sel</span>
+                                            <span class="text-[10px] font-bold uppercase tracking-wider text-stone-600 py-1">Rab</span>
+                                            <span class="text-[10px] font-bold uppercase tracking-wider text-stone-600 py-1">Kam</span>
+                                            <span class="text-[10px] font-bold uppercase tracking-wider text-stone-600 py-1">Jum</span>
+                                            <span class="text-[10px] font-bold uppercase tracking-wider text-stone-600 py-1">Sab</span>
+                                        </div>
+
+                                        <!-- Grid Tanggal -->
+                                        <div id="cal-days-grid" class="grid grid-cols-7 gap-1.5 sm:gap-2">
+                                            <!-- Rendered dynamically via JavaScript -->
+                                        </div>
+
+                                        <!-- Legend / Panduan Warna Kalender -->
+                                        <div class="mt-4 pt-3 border-t border-stone-100 flex flex-wrap items-center justify-between gap-3 text-[11px]">
+                                            <div class="flex flex-wrap items-center gap-3 sm:gap-4">
+                                                <span class="inline-flex items-center gap-1.5 text-stone-600 font-medium">
+                                                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                                                    <span>Tersedia</span>
+                                                </span>
+                                                <span class="inline-flex items-center gap-1.5 text-stone-600 font-medium">
+                                                    <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                                                    <span>Penuh / Terisi</span>
+                                                </span>
+                                                <span class="inline-flex items-center gap-1.5 text-stone-600 font-medium">
+                                                    <span class="w-2.5 h-2.5 rounded-full bg-[#33736f]"></span>
+                                                    <span>Pilihan Anda</span>
+                                                </span>
+                                                <span class="inline-flex items-center gap-1.5 text-stone-400 font-medium">
+                                                    <span class="w-2.5 h-2.5 rounded-full bg-stone-300"></span>
+                                                    <span>Lewat</span>
+                                                </span>
+                                            </div>
+                                            <span class="text-stone-400 text-[10px] italic">Waktu Lombok (WITA)</span>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div class="md:col-span-2">
@@ -1517,6 +1631,210 @@
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') closePhotoLightbox();
         });
+        // ==========================================
+        // KALENDER INTERAKTIF BOOKING & CEK BENTROK JADWAL
+        // ==========================================
+        (function() {
+            const bookedDates = @json($bookedDates ?? []);
+            const dateInput = document.getElementById('selected-event-date');
+            const monthTitle = document.getElementById('cal-month-title');
+            const daysGrid = document.getElementById('cal-days-grid');
+            const prevBtn = document.getElementById('cal-prev-btn');
+            const nextBtn = document.getElementById('cal-next-btn');
+            const statusBanner = document.getElementById('date-status-banner');
+            const statusLabel = document.getElementById('date-selected-label');
+            const statusDesc = document.getElementById('date-status-desc');
+            const statusIcon = document.getElementById('date-status-icon');
+            const statusBadge = document.getElementById('date-badge-status');
+            const warningAlert = document.getElementById('date-conflict-warning');
+            const conflictText = document.getElementById('conflict-date-text');
+
+            if (!daysGrid || !dateInput) return;
+
+            const monthNames = [
+                'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+            ];
+            const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            // Format YYYY-MM-DD
+            function formatDateStr(d) {
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+
+            const todayStr = formatDateStr(today);
+            let selectedDate = dateInput.value || '';
+
+            let viewYear = today.getFullYear();
+            let viewMonth = today.getMonth();
+
+            // Jika sebelumnya sudah ada input old('event_date'), arahkan bulan ke tanggal tersebut
+            if (selectedDate) {
+                const parts = selectedDate.split('-');
+                if (parts.length === 3) {
+                    viewYear = parseInt(parts[0], 10);
+                    viewMonth = parseInt(parts[1], 10) - 1;
+                }
+            }
+
+            function renderCalendar() {
+                // Update header title
+                monthTitle.textContent = `${monthNames[viewMonth]} ${viewYear}`;
+
+                // Atur tombol prev: jangan izinkan mundur sebelum bulan hari ini
+                const isCurrentMonth = (viewYear === today.getFullYear() && viewMonth === today.getMonth());
+                if (prevBtn) {
+                    prevBtn.disabled = isCurrentMonth;
+                    prevBtn.classList.toggle('opacity-30', isCurrentMonth);
+                    prevBtn.classList.toggle('cursor-not-allowed', isCurrentMonth);
+                }
+
+                daysGrid.innerHTML = '';
+
+                // Hari pertama bulan (0 = Minggu, 1 = Senin, ...)
+                const firstDayIndex = new Date(viewYear, viewMonth, 1).getDay();
+                // Jumlah hari dalam bulan
+                const totalDays = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+                // Sel kosong sebelum tanggal 1
+                for (let i = 0; i < firstDayIndex; i++) {
+                    const emptyCell = document.createElement('div');
+                    emptyCell.className = 'h-10 sm:h-12';
+                    daysGrid.appendChild(emptyCell);
+                }
+
+                // Render setiap tanggal
+                for (let day = 1; day <= totalDays; day++) {
+                    const dateObj = new Date(viewYear, viewMonth, day);
+                    const dateStr = formatDateStr(dateObj);
+                    const isPast = dateObj < today;
+                    const isBooked = bookedDates.includes(dateStr);
+                    const isSelected = (selectedDate === dateStr);
+
+                    const cell = document.createElement('button');
+                    cell.type = 'button';
+                    cell.className = 'h-10 sm:h-12 rounded-xl flex flex-col items-center justify-center relative transition-all duration-150 text-xs ';
+
+                    if (isPast) {
+                        cell.disabled = true;
+                        cell.className += 'bg-stone-100/60 text-stone-300 cursor-not-allowed border border-transparent';
+                        cell.innerHTML = `<span>${day}</span>`;
+                    } else if (isBooked) {
+                        // TANGGAL PENUH / TERISI
+                        cell.className += 'bg-rose-50 border border-rose-200 text-rose-700 font-bold hover:bg-rose-100 cursor-pointer shadow-xs';
+                        cell.innerHTML = `
+                            <span class="text-xs leading-none">${day}</span>
+                            <span class="text-[9px] uppercase font-black text-rose-600 mt-1 leading-none tracking-tight">Penuh</span>
+                            <span class="w-1.5 h-1.5 rounded-full bg-rose-500 absolute top-1 right-1"></span>
+                        `;
+                        cell.title = 'Jadwal Penuh - Sudah Dipesan';
+                        cell.addEventListener('click', () => onBookedDateClicked(dateObj, dateStr));
+                    } else if (isSelected) {
+                        // TANGGAL PILIHAN USER
+                        cell.className += 'bg-[#33736f] text-white font-bold shadow-md scale-105 border border-[#33736f] ring-2 ring-[#33736f]/30';
+                        cell.innerHTML = `
+                            <span class="text-xs leading-none">${day}</span>
+                            <span class="text-[9px] font-semibold text-white/90 mt-1 leading-none">Pilihan</span>
+                        `;
+                    } else {
+                        // TANGGAL TERSEDIA (HIJAU / BERSIH)
+                        cell.className += 'bg-white border border-stone-200 text-stone-800 hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-800 hover:scale-102 cursor-pointer shadow-2xs';
+                        cell.innerHTML = `
+                            <span class="text-xs leading-none">${day}</span>
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 opacity-70"></span>
+                        `;
+                        cell.title = 'Tersedia untuk reservasi sesi foto';
+                        cell.addEventListener('click', () => onAvailableDateSelected(dateObj, dateStr));
+                    }
+
+                    daysGrid.appendChild(cell);
+                }
+            }
+
+            // Saat user klik tanggal yang TERSEDIA
+            function onAvailableDateSelected(dateObj, dateStr) {
+                selectedDate = dateStr;
+                dateInput.value = dateStr;
+
+                // Sembunyikan peringatan bentrok
+                if (warningAlert) warningAlert.classList.add('hidden');
+
+                // Update UI Banner
+                const dayName = dayNames[dateObj.getDay()];
+                const dayNum = dateObj.getDate();
+                const mName = monthNames[dateObj.getMonth()];
+                const yNum = dateObj.getFullYear();
+                const formattedIndo = `${dayName}, ${dayNum} ${mName} ${yNum}`;
+
+                if (statusBanner) {
+                    statusBanner.className = 'mb-3.5 p-3.5 rounded-xl border transition-all flex items-center justify-between bg-[#e8f4f3] border-[#33736f]/40 text-[#255855]';
+                }
+                if (statusIcon) {
+                    statusIcon.className = 'w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm shadow-xs bg-[#33736f] text-white';
+                }
+                if (statusLabel) {
+                    statusLabel.textContent = `Tanggal Terpilih: ${formattedIndo}`;
+                }
+                if (statusDesc) {
+                    statusDesc.textContent = 'Jadwal Anda telah dikunci & siap direservasi.';
+                }
+                if (statusBadge) {
+                    statusBadge.innerHTML = `<span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">Tersedia ✓</span>`;
+                }
+
+                // Render ulang kalender untuk memperbarui sorotan
+                renderCalendar();
+            }
+
+            // Saat user klik tanggal yang PENUH / BENTROK
+            function onBookedDateClicked(dateObj, dateStr) {
+                const dayName = dayNames[dateObj.getDay()];
+                const dayNum = dateObj.getDate();
+                const mName = monthNames[dateObj.getMonth()];
+                const yNum = dateObj.getFullYear();
+                const formattedIndo = `${dayName}, ${dayNum} ${mName} ${yNum}`;
+
+                if (warningAlert && conflictText) {
+                    conflictText.innerHTML = `Tanggal <strong>${formattedIndo}</strong> sudah dipesan oleh klien lain. Mohon pilih tanggal lain yang masih bertanda <strong>Tersedia (Hijau)</strong> agar jadwal tidak bertabrakan.`;
+                    warningAlert.classList.remove('hidden');
+                    warningAlert.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }
+
+            // Tombol Navigasi Bulan
+            if (prevBtn) {
+                prevBtn.addEventListener('click', () => {
+                    if (viewMonth === 0) {
+                        viewMonth = 11;
+                        viewYear--;
+                    } else {
+                        viewMonth--;
+                    }
+                    renderCalendar();
+                });
+            }
+
+            if (nextBtn) {
+                nextBtn.addEventListener('click', () => {
+                    if (viewMonth === 11) {
+                        viewMonth = 0;
+                        viewYear++;
+                    } else {
+                        viewMonth++;
+                    }
+                    renderCalendar();
+                });
+            }
+
+            // Render awal
+            renderCalendar();
+        })();
     </script>
 </body>
 </html>

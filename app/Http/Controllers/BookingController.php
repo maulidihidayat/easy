@@ -23,7 +23,7 @@ class BookingController extends Controller
             'phone' => ['required', 'string', 'max:50'],
             'email' => ['required', 'email', 'max:255'],
             'service_type' => ['required', 'string', 'max:255'],
-            'event_date' => ['nullable', 'date'],
+            'event_date' => ['required', 'date', 'after_or_equal:today'],
             'location' => ['nullable', 'string', 'max:255'],
             'details' => ['nullable', 'string'],
             'payment_method' => ['required', 'string', 'max:100'],
@@ -35,11 +35,26 @@ class BookingController extends Controller
             'email.required' => 'Alamat email wajib diisi.',
             'email.email' => 'Format email tidak valid.',
             'service_type.required' => 'Silakan pilih jenis layanan.',
+            'event_date.required' => 'Silakan pilih tanggal acara pada kalender.',
+            'event_date.after_or_equal' => 'Tanggal acara tidak boleh di masa lalu.',
             'payment_method.required' => 'Silakan pilih metode pembayaran.',
             'payment_proof.image' => 'File bukti pembayaran harus berupa gambar.',
             'payment_proof.mimes' => 'Format bukti pembayaran harus JPG, JPEG, PNG, atau WEBP.',
             'payment_proof.max' => 'Ukuran file bukti pembayaran maksimal 5MB.',
         ]);
+
+        // Cek apakah tanggal sudah dibooking oleh klien lain (Bentrok Jadwal)
+        $existingBooking = Booking::query()
+            ->whereDate('event_date', $validated['event_date'])
+            ->whereIn('status', ['approved', 'pending'])
+            ->first();
+
+        if ($existingBooking) {
+            $formattedDate = \Carbon\Carbon::parse($validated['event_date'])->translatedFormat('d F Y');
+            return back()->withInput()->withErrors([
+                'event_date' => "Mohon maaf, tanggal {$formattedDate} sudah dipesan oleh klien lain. Silakan pilih tanggal lain yang masih bertanda hijau pada kalender jadwal."
+            ]);
+        }
 
         // Upload bukti pembayaran jika dilampirkan
         if ($request->hasFile('payment_proof')) {

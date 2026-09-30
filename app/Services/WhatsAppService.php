@@ -183,6 +183,93 @@ class WhatsAppService
     }
 
     /**
+     * Format phone number to international Indonesian format (628...)
+     */
+    public function formatPhoneNumber(?string $phone): string
+    {
+        if (!$phone) {
+            return $this->phoneNumber;
+        }
+
+        // Remove non-numeric characters
+        $cleaned = preg_replace('/[^0-9]/', '', $phone);
+
+        if (str_starts_with($cleaned, '0')) {
+            $cleaned = '62' . substr($cleaned, 1);
+        } elseif (str_starts_with($cleaned, '8')) {
+            $cleaned = '62' . $cleaned;
+        }
+
+        return !empty($cleaned) ? $cleaned : $this->phoneNumber;
+    }
+
+    /**
+     * Generate direct WhatsApp link to the CLIENT with approval message
+     */
+    public function generateCustomerApprovalUrl(Booking $booking): string
+    {
+        $message = $this->generateApprovalMessage($booking);
+        $clientPhone = $this->formatPhoneNumber($booking->phone);
+        return "https://wa.me/{$clientPhone}?text=" . urlencode($message);
+    }
+
+    /**
+     * Generate cancellation message for customer
+     */
+    public function generateCancellationMessage(Booking $booking, ?string $reason = null): string
+    {
+        $message = "⚠️ *PEMBERITAHUAN PEMBATALAN BOOKING* ⚠️\n\n";
+        $message .= "Halo " . $booking->full_name . ",\n\n";
+        $message .= "Kami menginformasikan bahwa pesanan booking Anda di *Studio Foto Cihuy* untuk layanan *" . $booking->service_type . "* telah *DIBATALKAN*.\n\n";
+
+        $message .= "📋 *Detail Booking:*\n";
+        $message .= "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+        $message .= "🆔 ID Booking: #" . $booking->id . "\n";
+        if ($booking->event_date) {
+            $message .= "📅 Tanggal Acara: " . \Carbon\Carbon::parse($booking->event_date)->format('d M Y') . "\n";
+        }
+        $message .= "❌ Status Booking: DIBATALKAN\n";
+        $message .= "💳 Status Pembayaran: " . strtoupper($booking->payment_status ?? 'UNPAID') . "\n";
+
+        if ($reason || $booking->admin_notes) {
+            $message .= "\n📝 *Alasan / Keterangan:* \n" . ($reason ?: $booking->admin_notes) . "\n";
+        }
+
+        $message .= "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n";
+
+        if ($booking->payment_status === 'refunded') {
+            $message .= "💰 *Informasi Pengembalian Dana (Refund):*\n";
+            $message .= "Dana pembayaran Anda sedang/telah diproses pengembaliannya sesuai kebijakan studio kami. Bukti transfer refund dapat dikonfirmasikan lebih lanjut.\n\n";
+        }
+
+        $message .= "Jika Anda memiliki pertanyaan atau ingin melakukan penjadwalan ulang di masa mendatang, jangan ragu untuk menghubungi kami kembali melalui chat ini.\n\n";
+        $message .= "Terima kasih atas pengertian dan kerjasamanya! 🙏✨\n\n";
+        $message .= "---\n*Studio Foto Cihuy*";
+
+        return $message;
+    }
+
+    /**
+     * Generate direct WhatsApp link to CLIENT for cancellation
+     */
+    public function generateCustomerCancellationUrl(Booking $booking, ?string $reason = null): string
+    {
+        $message = $this->generateCancellationMessage($booking, $reason);
+        $clientPhone = $this->formatPhoneNumber($booking->phone);
+        return "https://wa.me/{$clientPhone}?text=" . urlencode($message);
+    }
+
+    /**
+     * Generate direct WhatsApp chat URL with client
+     */
+    public function generateCustomerChatUrl(Booking $booking, ?string $customMessage = null): string
+    {
+        $defaultMsg = "Halo Kak {$booking->full_name}, kami dari tim Studio Foto Cihuy terkait pesanan booking #{$booking->id} ({$booking->service_type})...";
+        $clientPhone = $this->formatPhoneNumber($booking->phone);
+        return "https://wa.me/{$clientPhone}?text=" . urlencode($customMessage ?: $defaultMsg);
+    }
+
+    /**
      * Get WhatsApp contact URL
      */
     public function getContactUrl(): string

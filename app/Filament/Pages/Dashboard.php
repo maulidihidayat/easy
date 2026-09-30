@@ -4,21 +4,18 @@ namespace App\Filament\Pages;
 
 use App\Filament\Widgets\BookingChartWidget;
 use App\Filament\Widgets\FeedbackRatingWidget;
-use App\Filament\Widgets\RecentBookingsWidget; // Diperbaiki dari 'RecentBookingsWidg'
+use App\Filament\Widgets\RecentBookingsWidget;
+use App\Filament\Widgets\PaymentRecapWidget;
 use App\Filament\Widgets\StatsOverviewWidget;
 use App\Filament\Widgets\ServiceTypeWidget;
-use Filament\Pages\Dashboard as BaseDashboard; // Import class dasar Filament Dashboard
+use Filament\Pages\Dashboard as BaseDashboard;
 
-// Class yang benar, extend BaseDashboard
 class Dashboard extends BaseDashboard
 {
-    // Secara opsional, ganti judul dashboard
-    // protected static ?string $title = 'Dashboard Utama Fotografi';
-
-    // Mendefinisikan urutan widget di dashboard
     public function getWidgets(): array
     {
         return [
+            PaymentRecapWidget::class,
             StatsOverviewWidget::class,
             BookingChartWidget::class,
             ServiceTypeWidget::class,

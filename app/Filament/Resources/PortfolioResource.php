@@ -35,12 +35,12 @@ class PortfolioResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->schema([
-        Forms\Components\TextInput::make('Title')::make('title')
+        Forms\Components\TextInput::make('title')
             ->label('Title')
             ->required()
             ->maxLength(255),
 
-        Forms\Components\TextInput::make('Category')::make('category')
+        Forms\Components\TextInput::make('category')
             ->label('Category')
             ->datalist([
                 'Prewedding',
@@ -53,7 +53,7 @@ class PortfolioResource extends Resource
         Forms\Components\FileUpload::make('image_path')
             ->label('Image')
             ->image()
-            ->directory('portfolio')
+            ->directory('portfolios')
             ->visibility('public')
             ->disk('public')
             ->imageEditor(),

@@ -39,7 +39,7 @@ class BookingApprovalController extends Controller
             
             // Generate WhatsApp approval message
             $approvalMessage = $this->whatsAppService->generateApprovalMessage($booking);
-            $whatsAppUrl = $this->whatsAppService->generateWhatsAppUrl($approvalMessage);
+            $whatsAppUrl = $this->whatsAppService->generateCustomerApprovalUrl($booking);
             
             // Log the approval
             Log::info('Booking approved', [
@@ -69,6 +69,52 @@ class BookingApprovalController extends Controller
         }
     }
     
+    /**
+     * Cancel booking (Pembatalan Pesanan)
+     */
+    public function cancel(Request $request, Booking $booking)
+    {
+        $request->validate([
+            'admin_notes' => 'nullable|string|max:1000',
+            'payment_status' => 'nullable|string|in:refunded,unpaid,rejected,pending',
+        ]);
+
+        try {
+            $paymentStatus = $request->input('payment_status', 'refunded');
+
+            $booking->update([
+                'status' => 'cancelled',
+                'payment_status' => $paymentStatus,
+                'admin_notes' => $request->admin_notes ?: 'Dibatalkan oleh admin/pelanggan',
+            ]);
+
+            $whatsAppUrl = $this->whatsAppService->generateCustomerCancellationUrl($booking, $request->admin_notes);
+
+            Log::info('Booking cancelled', [
+                'booking_id' => $booking->id,
+                'customer_name' => $booking->full_name,
+                'reason' => $request->admin_notes
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Booking berhasil dibatalkan!',
+                'whatsapp_url' => $whatsAppUrl,
+                'booking' => $booking->fresh()
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Booking cancellation failed', [
+                'booking_id' => $booking->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membatalkan booking: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     /**
      * Reject booking
      */
@@ -113,19 +159,34 @@ class BookingApprovalController extends Controller
     }
     
     /**
-     * Get WhatsApp approval URL for a booking
+     * Get WhatsApp approval URL for a booking (direct to client)
      */
     public function getApprovalWhatsAppUrl(Booking $booking)
     {
         try {
-            $approvalMessage = $this->whatsAppService->generateApprovalMessage($booking);
-            return $this->whatsAppService->generateWhatsAppUrl($approvalMessage);
-        } catch (\Exception $e) {
-            Log::error('Failed to generate approval WhatsApp URL', [
-                'booking_id' => $booking->id,
-                'error' => $e->getMessage()
+            return response()->json([
+                'success' => true,
+                'whatsapp_url' => $this->whatsAppService->generateCustomerApprovalUrl($booking),
             ]);
-            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal generate URL WhatsApp: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get WhatsApp cancellation URL for a booking (direct to client)
+     */
+    public function getCancelWhatsAppUrl(Booking $booking)
+    {
+        try {
+            return response()->json([
+                'success' => true,
+                'whatsapp_url' => $this->whatsAppService->generateCustomerCancellationUrl($booking),
+            ]);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal generate URL WhatsApp: ' . $e->getMessage()

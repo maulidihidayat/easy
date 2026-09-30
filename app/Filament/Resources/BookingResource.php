@@ -15,6 +15,9 @@ use Filament\Actions\ViewAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\Action;
+use Filament\Notifications\Notification;
+use App\Services\WhatsAppService;
 use Illuminate\Database\Eloquent\Builder;
 
 class BookingResource extends Resource
@@ -80,6 +83,7 @@ class BookingResource extends Resource
                     ->options([
                         'pending' => 'Pending (Menunggu Verifikasi)',
                         'paid' => 'Paid (Lunas)',
+                        'refunded' => 'Refunded (Dana Dikembalikan)',
                         'unpaid' => 'Unpaid (Belum Bayar)',
                         'rejected' => 'Rejected (Ditolak)',
                     ])
@@ -97,7 +101,7 @@ class BookingResource extends Resource
                     ->downloadable(),
 
                 Forms\Components\Textarea::make('admin_notes')
-                    ->label('Admin Notes')
+                    ->label('Admin Notes / Catatan Refund')
                     ->rows(3),
                 Forms\Components\DateTimePicker::make('approved_at')
                     ->label('Approved At')
@@ -107,9 +111,10 @@ class BookingResource extends Resource
                     ->label('Status')
                     ->default('pending')
                     ->options([
-                        'pending' => 'Pending',
-                        'approved' => 'Approved',
-                        'rejected' => 'Rejected',
+                        'pending' => 'Pending (Menunggu Konfirmasi)',
+                        'approved' => 'Approved (Disetujui)',
+                        'cancelled' => 'Cancelled (Dibatalkan)',
+                        'rejected' => 'Rejected (Ditolak)',
                     ])
                     ->native(false),
         ]);
@@ -120,23 +125,24 @@ class BookingResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('full_name')
-                    ->label('Name')
+                    ->label('Nama Klien')
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('phone')
-                    ->label('Phone')
-                    ->toggleable(),
-                Tables\Columns\TextColumn::make('email')
-                    ->label('Email')
+                    ->label('No. WhatsApp')
                     ->searchable()
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('service_type')
-                    ->label('Service')
+                    ->label('Layanan')
                     ->badge()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('event_date')
-                    ->label('Event Date')
-                    ->date()
+                    ->label('Tgl Acara')
+                    ->date('d M Y')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('amount')
+                    ->label('Nominal')
+                    ->money('IDR', locale: 'id')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('payment_method')
                     ->label('Metode Bayar')
@@ -148,6 +154,7 @@ class BookingResource extends Resource
                     ->badge()
                     ->color(fn(string|null $state): string => match ($state) {
                         'paid' => 'success',
+                        'refunded' => 'info',
                         'rejected' => 'danger',
                         'unpaid' => 'gray',
                         default => 'warning',
@@ -158,27 +165,57 @@ class BookingResource extends Resource
                     ->square()
                     ->size(40),
                 Tables\Columns\TextColumn::make('status')
-                    ->label('Status')
+                    ->label('Status Booking')
                     ->badge()
                     ->color(fn(string $state): string => match ($state) {
                         'approved' => 'success',
-                        'rejected' => 'danger',
+                        'cancelled' => 'danger',
+                        'rejected' => 'gray',
                         default => 'warning',
                     }),
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Created')
-                    ->dateTime()
+                    ->label('Tgl Booking')
+                    ->dateTime('d M Y, H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                SelectFilter::make('period')
+                    ->label('Rekap Periode')
+                    ->options([
+                        'this_month' => 'Bulan Ini',
+                        'last_month' => 'Bulan Lalu (1 Bulan Terakhir)',
+                        'two_months' => 'Rekap 2 Bulan Terakhir',
+                    ])
+                    ->query(function (Builder $query, array $data) {
+                        $val = $data['value'] ?? null;
+                        if ($val === 'this_month') {
+                            $query->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()]);
+                        } elseif ($val === 'last_month') {
+                            $query->whereBetween('created_at', [now()->subMonth()->startOfMonth(), now()->subMonth()->endOfMonth()]);
+                        } elseif ($val === 'two_months') {
+                            $query->whereBetween('created_at', [now()->subMonths(1)->startOfMonth(), now()->endOfMonth()]);
+                        }
+                    }),
+                SelectFilter::make('payment_status')
+                    ->label('Status Pembayaran')
+                    ->options([
+                        'paid' => 'Paid (Lunas)',
+                        'pending' => 'Pending (Menunggu Verifikasi)',
+                        'refunded' => 'Refunded (Dana Dikembalikan)',
+                        'unpaid' => 'Unpaid (Belum Bayar)',
+                        'rejected' => 'Rejected (Ditolak)',
+                    ]),
                 SelectFilter::make('status')
+                    ->label('Status Booking')
                     ->options([
                         'pending' => 'Pending',
-                        'approved' => 'Approved',
-                        'rejected' => 'Rejected',
+                        'approved' => 'Approved (Disetujui)',
+                        'cancelled' => 'Cancelled (Dibatalkan)',
+                        'rejected' => 'Rejected (Ditolak)',
                     ]),
                 SelectFilter::make('service_type')
+                    ->label('Jenis Layanan')
                     ->options([
                         'Prewedding Photography' => 'Prewedding Photography',
                         'Wedding Photography' => 'Wedding Photography',
@@ -189,6 +226,74 @@ class BookingResource extends Resource
                     ]),
             ])
             ->actions([
+                Action::make('approve')
+                    ->label('Approve & WA')
+                    ->icon('heroicon-o-check-badge')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalHeading('Konfirmasi & Setujui Booking')
+                    ->modalDescription('Apakah Anda yakin ingin menyetujui booking ini dan menandai pembayaran sebagai lunas? Setelah disetujui, Anda akan diarahkan ke WhatsApp konfirmasi klien.')
+                    ->action(function (Booking $record) {
+                        $record->update([
+                            'status' => 'approved',
+                            'payment_status' => 'paid',
+                            'approved_at' => now(),
+                        ]);
+
+                        Notification::make()
+                            ->title('Booking Disetujui!')
+                            ->body('Status booking #' . $record->id . ' disetujui & pembayaran lunas.')
+                            ->success()
+                            ->send();
+
+                        $url = app(WhatsAppService::class)->generateCustomerApprovalUrl($record);
+                        return redirect()->away($url);
+                    })
+                    ->visible(fn(Booking $record) => $record->status !== 'approved'),
+
+                Action::make('cancel_booking')
+                    ->label('Batalkan')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('danger')
+                    ->form([
+                        Forms\Components\Select::make('payment_status')
+                            ->label('Status Pembayaran / Refund')
+                            ->options([
+                                'refunded' => 'Refunded (Dana Dikembalikan ke Klien)',
+                                'unpaid' => 'Unpaid / No Refund (Tanpa Refund)',
+                                'rejected' => 'Rejected (Pembayaran Ditolak)',
+                            ])
+                            ->default('refunded')
+                            ->required(),
+                        Forms\Components\Textarea::make('admin_notes')
+                            ->label('Alasan Pembatalan & Catatan Refund')
+                            ->placeholder('Contoh: Pelanggan mengajukan pembatalan karena jadwal bentrok / Refund DP Rp 300.000 sudah ditransfer balik.')
+                            ->required(),
+                    ])
+                    ->action(function (Booking $record, array $data) {
+                        $record->update([
+                            'status' => 'cancelled',
+                            'payment_status' => $data['payment_status'],
+                            'admin_notes' => $data['admin_notes'],
+                        ]);
+
+                        Notification::make()
+                            ->title('Booking Dibatalkan')
+                            ->body('Booking #' . $record->id . ' telah dibatalkan.')
+                            ->warning()
+                            ->send();
+
+                        $url = app(WhatsAppService::class)->generateCustomerCancellationUrl($record, $data['admin_notes']);
+                        return redirect()->away($url);
+                    })
+                    ->visible(fn(Booking $record) => $record->status !== 'cancelled'),
+
+                Action::make('chat_wa')
+                    ->label('WA')
+                    ->icon('heroicon-o-chat-bubble-left-ellipsis')
+                    ->color('info')
+                    ->url(fn(Booking $record) => app(WhatsAppService::class)->generateCustomerChatUrl($record), shouldOpenInNewTab: true),
+
                 ViewAction::make(),
                 EditAction::make(),
                 DeleteAction::make(),
