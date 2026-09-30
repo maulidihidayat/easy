@@ -23,12 +23,16 @@ class BookingApprovalController extends Controller
     {
         $request->validate([
             'admin_notes' => 'nullable|string|max:1000',
+            'payment_status' => 'nullable|string|in:pending,paid,rejected,unpaid',
         ]);
         
         try {
-            // Update booking status
+            // Update booking and payment status
+            $paymentStatus = $request->input('payment_status', ($booking->payment_proof ? 'paid' : $booking->payment_status));
+
             $booking->update([
                 'status' => 'approved',
+                'payment_status' => $paymentStatus ?? 'paid',
                 'approved_at' => now(),
                 'admin_notes' => $request->admin_notes,
             ]);
@@ -78,6 +82,7 @@ class BookingApprovalController extends Controller
             // Update booking status
             $booking->update([
                 'status' => 'rejected',
+                'payment_status' => 'rejected',
                 'admin_notes' => $request->admin_notes,
             ]);
             

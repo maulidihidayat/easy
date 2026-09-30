@@ -71,22 +71,47 @@ class BookingResource extends Resource
                     ->label('Details')
                     ->rows(4),
 
-                    Forms\Components\Textarea::make('admin_notes')
+                Forms\Components\TextInput::make('payment_method')
+                    ->label('Metode Pembayaran')
+                    ->maxLength(100),
+                Forms\Components\Select::make('payment_status')
+                    ->label('Status Pembayaran')
+                    ->default('pending')
+                    ->options([
+                        'pending' => 'Pending (Menunggu Verifikasi)',
+                        'paid' => 'Paid (Lunas)',
+                        'unpaid' => 'Unpaid (Belum Bayar)',
+                        'rejected' => 'Rejected (Ditolak)',
+                    ])
+                    ->native(false),
+                Forms\Components\TextInput::make('amount')
+                    ->label('Nominal / Total')
+                    ->numeric()
+                    ->prefix('Rp'),
+                Forms\Components\FileUpload::make('payment_proof')
+                    ->label('Bukti Pembayaran')
+                    ->disk('public')
+                    ->directory('payment_proofs')
+                    ->image()
+                    ->openable()
+                    ->downloadable(),
+
+                Forms\Components\Textarea::make('admin_notes')
                     ->label('Admin Notes')
                     ->rows(3),
-                    Forms\Components\DateTimePicker::make('approved_at')
+                Forms\Components\DateTimePicker::make('approved_at')
                     ->label('Approved At')
                     ->native(false)
                     ->seconds(false),
-                    Forms\Components\Select::make('status')
-                        ->label('Status')
-                        ->default('pending')
-                        ->options([
-                            'pending' => 'Pending',
-                            'approved' => 'Approved',
-                            'rejected' => 'Rejected',
-                        ])
-                        ->native(false),
+                Forms\Components\Select::make('status')
+                    ->label('Status')
+                    ->default('pending')
+                    ->options([
+                        'pending' => 'Pending',
+                        'approved' => 'Approved',
+                        'rejected' => 'Rejected',
+                    ])
+                    ->native(false),
         ]);
     }
 
@@ -113,6 +138,25 @@ class BookingResource extends Resource
                     ->label('Event Date')
                     ->date()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('payment_method')
+                    ->label('Metode Bayar')
+                    ->badge()
+                    ->color('gray')
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('payment_status')
+                    ->label('Status Bayar')
+                    ->badge()
+                    ->color(fn(string|null $state): string => match ($state) {
+                        'paid' => 'success',
+                        'rejected' => 'danger',
+                        'unpaid' => 'gray',
+                        default => 'warning',
+                    }),
+                Tables\Columns\ImageColumn::make('payment_proof')
+                    ->label('Bukti')
+                    ->disk('public')
+                    ->square()
+                    ->size(40),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge()

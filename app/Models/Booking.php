@@ -14,6 +14,10 @@ class Booking extends Model
         'event_date',
         'location',
         'details',
+        'payment_method',
+        'payment_status',
+        'payment_proof',
+        'amount',
         'status',
         'approved_at',
         'admin_notes',
@@ -22,5 +26,15 @@ class Booking extends Model
     protected $casts = [
         'event_date' => 'date',
         'approved_at' => 'datetime',
+        'amount' => 'decimal:2',
     ];
+
+    protected $appends = [
+        'payment_proof_url',
+    ];
+
+    public function getPaymentProofUrlAttribute(): ?string
+    {
+        return $this->payment_proof ? asset('storage/' . $this->payment_proof) : null;
+    }
 }

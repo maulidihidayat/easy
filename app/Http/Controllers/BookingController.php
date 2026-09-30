@@ -26,7 +26,45 @@ class BookingController extends Controller
             'event_date' => ['nullable', 'date'],
             'location' => ['nullable', 'string', 'max:255'],
             'details' => ['nullable', 'string'],
+            'payment_method' => ['required', 'string', 'max:100'],
+            'amount' => ['nullable', 'numeric', 'min:0'],
+            'payment_proof' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
+        ], [
+            'full_name.required' => 'Nama lengkap wajib diisi.',
+            'phone.required' => 'Nomor WhatsApp / telepon wajib diisi.',
+            'email.required' => 'Alamat email wajib diisi.',
+            'email.email' => 'Format email tidak valid.',
+            'service_type.required' => 'Silakan pilih jenis layanan.',
+            'payment_method.required' => 'Silakan pilih metode pembayaran.',
+            'payment_proof.image' => 'File bukti pembayaran harus berupa gambar.',
+            'payment_proof.mimes' => 'Format bukti pembayaran harus JPG, JPEG, PNG, atau WEBP.',
+            'payment_proof.max' => 'Ukuran file bukti pembayaran maksimal 5MB.',
         ]);
+
+        // Upload bukti pembayaran jika dilampirkan
+        if ($request->hasFile('payment_proof')) {
+            $file = $request->file('payment_proof');
+            $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('payment_proofs', $fileName, 'public');
+            $validated['payment_proof'] = $path;
+            $validated['payment_status'] = 'pending';
+        } else {
+            $validated['payment_status'] = ($request->payment_method === 'Bayar di Lokasi / Cash') ? 'unpaid' : 'pending';
+        }
+
+        $validated['status'] = 'pending';
+
+        // Set default package price if amount is empty
+        if (empty($validated['amount'])) {
+            $prices = [
+                'Prewedding Photography' => 2500000,
+                'Wedding Photography' => 5000000,
+                'Portrait Photography' => 1500000,
+                'Event Photography' => 2000000,
+                'Family Photography' => 1800000,
+            ];
+            $validated['amount'] = $prices[$validated['service_type']] ?? null;
+        }
 
         // Create booking
         $booking = Booking::create($validated);

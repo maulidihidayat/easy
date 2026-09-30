@@ -40,15 +40,28 @@ class WhatsAppService
             $message .= "📝 *Detail Kebutuhan:*\n" . $booking->details . "\n";
         }
         
+        if ($booking->payment_method) {
+            $message .= "💳 *Metode Pembayaran:* " . $booking->payment_method . "\n";
+        }
+
+        if ($booking->amount) {
+            $message .= "💰 *Estimasi Total:* Rp " . number_format($booking->amount, 0, ',', '.') . "\n";
+        }
+
+        if ($booking->payment_proof) {
+            $message .= "🧾 *Bukti Pembayaran:* Sudah Diunggah (Lihat di Admin Panel)\n";
+        } else {
+            $message .= "🧾 *Bukti Pembayaran:* " . ($booking->payment_method === 'Bayar di Lokasi / Cash' ? 'Bayar Langsung di Lokasi' : 'Belum Diunggah') . "\n";
+        }
+
         $message .= "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
         $message .= "⏰ *Waktu Booking:* " . $booking->created_at->format('d M Y, H:i') . "\n";
-        // $message .= "🆔 *ID Booking:* #" . $booking->id . "\n\n";
+        $message .= "🆔 *ID Booking:* #" . $booking->id . "\n\n";
         
         $message .= "💡 *Langkah Selanjutnya:*\n";
-        $message .= "1. Konfirmasi ketersediaan tanggal\n";
-        $message .= "2. Kirim detail paket dan harga\n";
-        $message .= "3. Atur jadwal konsultasi\n";
-        $message .= "4. Konfirmasi booking\n\n";
+        $message .= "1. Cek & verifikasi bukti pembayaran di Admin Panel\n";
+        $message .= "2. Konfirmasi ketersediaan jadwal\n";
+        $message .= "3. Hubungi customer untuk konsultasi\n\n";
         
         $message .= "📱 *Balas pesan ini untuk konfirmasi*";
         
@@ -90,13 +103,20 @@ class WhatsAppService
         if ($booking->event_date) {
             $message .= "📅 Tanggal Acara: " . \Carbon\Carbon::parse($booking->event_date)->format('d M Y') . "\n";
         }
+
+        if ($booking->payment_method) {
+            $message .= "💳 Metode Pembayaran: " . $booking->payment_method . "\n";
+        }
+
+        if ($booking->payment_proof) {
+            $message .= "🧾 Bukti Pembayaran: Sudah Diterima (Menunggu Verifikasi Admin)\n";
+        }
         
         $message .= "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n";
         
         $message .= "⏳ *Tim kami akan segera menghubungi Anda dalam 24 jam untuk:*\n";
-        $message .= "• Konfirmasi ketersediaan\n";
-        $message .= "• Detail paket dan harga\n";
-        $message .= "• Jadwal konsultasi\n";
+        $message .= "• Konfirmasi ketersediaan dan verifikasi pembayaran\n";
+        $message .= "• Detail paket dan jadwal sesi foto\n";
         $message .= "• Persiapan sesi foto\n\n";
         
         $message .= "📞 *Kontak Darurat:*\n";
@@ -122,8 +142,12 @@ class WhatsAppService
         $message .= "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
         $message .= "🆔 ID Booking: #" . $booking->id . "\n";
         $message .= "📅 Tanggal Booking: " . $booking->created_at->format('d M Y, H:i') . "\n";
-        $message .= "✅ Status: DISETUJUI\n";
-        $message .= "📅 Tanggal Approval: " . $booking->approved_at->format('d M Y, H:i') . "\n";
+        $message .= "✅ Status Booking: DISETUJUI\n";
+        $message .= "💳 Status Pembayaran: " . ($booking->payment_status === 'paid' ? 'TERVERIFIKASI / LUNAS' : strtoupper($booking->payment_status ?? 'PENDING')) . "\n";
+        if ($booking->payment_method) {
+            $message .= "💰 Metode Pembayaran: " . $booking->payment_method . "\n";
+        }
+        $message .= "📅 Tanggal Approval: " . ($booking->approved_at ? $booking->approved_at->format('d M Y, H:i') : now()->format('d M Y, H:i')) . "\n";
         
         if ($booking->event_date) {
             $message .= "📅 Tanggal Acara: " . \Carbon\Carbon::parse($booking->event_date)->format('d M Y') . "\n";
@@ -136,11 +160,9 @@ class WhatsAppService
         $message .= "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n";
         
         $message .= "🎯 *Langkah Selanjutnya:*\n";
-        $message .= "1. 📞 Tim kami akan menghubungi Anda dalam 24 jam\n";
-        $message .= "2. 💰 Diskusi detail paket dan harga\n";
-        $message .= "3. 📅 Konfirmasi jadwal dan lokasi\n";
-        $message .= "4. 📝 Persiapan kontrak dan pembayaran\n";
-        $message .= "5. 📸 Persiapan sesi foto\n\n";
+        $message .= "1. 📞 Tim fotografer kami akan menghubungi Anda untuk briefing persiapan\n";
+        $message .= "2. 📅 Jadwal dan lokasi sesi telah dikunci untuk Anda\n";
+        $message .= "3. 📸 Persiapan sesi foto terbaik Anda!\n\n";
         
         if ($booking->admin_notes) {
             $message .= "📝 *Catatan dari Tim:*\n";
