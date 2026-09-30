@@ -12,6 +12,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
+    <!-- Leaflet CSS for Interactive Location Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     
     <style>
@@ -146,9 +149,16 @@
                 </h1>
 
                 <!-- Subtitle -->
-                <p class="text-base sm:text-lg md:text-xl text-stone-300 font-light max-w-2xl mx-auto leading-relaxed mb-10">
+                <p class="text-base sm:text-lg md:text-xl text-stone-300 font-light max-w-2xl mx-auto leading-relaxed mb-6">
                     Kami tidak sekadar mengambil gambar. Kami mendokumentasikan kehangatan emosi, tawa spontan, dan tatapan tulus Anda dalam visual yang hangat dan tak lekang oleh waktu.
                 </p>
+
+                <!-- Human Reassurance Badges -->
+                <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-stone-300 font-medium mb-10">
+                    <span class="inline-flex items-center gap-1.5"><span class="text-amber-300 font-bold">✓</span> Konsultasi Konsep Santai</span>
+                    <span class="inline-flex items-center gap-1.5"><span class="text-amber-300 font-bold">✓</span> Arahan Pose Ramah &amp; Luwes</span>
+                    <span class="inline-flex items-center gap-1.5"><span class="text-amber-300 font-bold">✓</span> Sneak Peek Cepat 48 Jam</span>
+                </div>
 
                 <!-- Actions -->
                 <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -766,19 +776,20 @@
                             </div>
                         </div>
 
-                        <!-- Step 2: Layanan & Tanggal -->
+                        <!-- Step 2: Layanan, Lokasi & Tanggal -->
                         <div>
                             <div class="flex items-center gap-2.5 mb-5 pb-2 border-b border-stone-100">
                                 <span class="w-6 h-6 rounded-full bg-[#e8f4f3] text-[#33736f] flex items-center justify-center font-bold text-xs">2</span>
-                                <h3 class="font-bold text-stone-900 text-sm uppercase tracking-wider">Detail Sesi Fotografi</h3>
+                                <h3 class="font-bold text-stone-900 text-sm uppercase tracking-wider">Detail Sesi, Tanggal &amp; Lokasi</h3>
                             </div>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div class="space-y-6">
+                                <!-- Pilih Layanan -->
                                 <div>
-                                    <label class="block text-xs font-semibold text-stone-700 mb-1.5">Pilih Layanan <span class="text-rose-500">*</span></label>
+                                    <label class="block text-xs font-bold text-stone-900 uppercase tracking-wider mb-2">Pilih Paket Layanan <span class="text-rose-500">*</span></label>
                                     <select name="service_type" id="service-select"
-                                        class="w-full px-4 py-3 bg-[#FAF8F5] border border-stone-200 rounded-xl text-sm focus:ring-2 focus:ring-[#33736f] focus:bg-white focus:outline-none transition"
+                                        class="w-full px-4 py-3 bg-[#FAF8F5] border border-stone-200 rounded-xl text-sm focus:ring-2 focus:ring-[#33736f] focus:bg-white focus:outline-none transition text-stone-800"
                                         required>
-                                        <option value="">-- Pilih Paket Layanan --</option>
+                                        <option value="">-- Pilih Paket Layanan Fotografi --</option>
                                         <option value="Prewedding Photography" data-price="2500000" data-dp="750000" @selected(old('service_type') === 'Prewedding Photography')>Prewedding Photography (Rp 2.500.000)</option>
                                         <option value="Wedding Photography" data-price="5000000" data-dp="1500000" @selected(old('service_type') === 'Wedding Photography')>Wedding Photography (Rp 5.000.000)</option>
                                         <option value="Portrait Photography" data-price="1500000" data-dp="500000" @selected(old('service_type') === 'Portrait Photography')>Portrait Photography (Rp 1.500.000)</option>
@@ -786,16 +797,29 @@
                                         <option value="Family Photography" data-price="1800000" data-dp="500000" @selected(old('service_type') === 'Family Photography')>Family Photography (Rp 1.800.000)</option>
                                         <option value="Custom Package" data-price="0" data-dp="500000" @selected(old('service_type') === 'Custom Package')>Custom Package (Sesuai Kebutuhan)</option>
                                     </select>
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-stone-700 mb-1.5">Lokasi Pelaksanaan</label>
-                                    <input name="location" value="{{ old('location') }}" type="text"
-                                        class="w-full px-4 py-3 bg-[#FAF8F5] border border-stone-200 rounded-xl text-sm focus:ring-2 focus:ring-[#33736f] focus:bg-white focus:outline-none transition"
-                                        placeholder="Contoh: Pantai Senggigi, Studio Easy Project, Hotel Grand, dll">
+
+                                    <!-- Dynamic Price Card -->
+                                    <div id="service-price-card" class="hidden mt-3 rounded-2xl bg-[#e8f4f3] border border-[#33736f]/30 p-4 transition-all">
+                                        <div class="flex items-center justify-between flex-wrap gap-2">
+                                            <div>
+                                                <span class="text-[10px] font-bold uppercase tracking-wider text-[#33736f]">Rincian Investasi</span>
+                                                <h4 id="price-card-title" class="font-bold text-stone-900 text-sm mt-0.5">-</h4>
+                                            </div>
+                                            <div class="text-right">
+                                                <span class="text-[10px] text-stone-500 font-medium">Estimasi Biaya</span>
+                                                <div id="price-card-total" class="font-editorial text-xl font-bold text-[#33736f]">-</div>
+                                            </div>
+                                        </div>
+                                        <div class="mt-2.5 pt-2.5 border-t border-[#33736f]/20 flex items-center justify-between flex-wrap gap-2 text-xs text-stone-700">
+                                            <span>💡 Anjuran DP Pengunci Jadwal: <strong id="price-card-dp" class="text-emerald-800 font-bold">-</strong></span>
+                                            <span class="text-stone-500 text-[11px]">Pelunasan dapat dilakukan di hari H pelaksanaan</span>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" name="amount" id="form-amount" value="{{ old('amount') }}">
                                 </div>
 
                                 <!-- Kalender Interaktif Ketersediaan Jadwal -->
-                                <div class="md:col-span-2">
+                                <div>
                                     <div class="flex items-center justify-between mb-2">
                                         <label class="block text-xs font-bold text-stone-900 uppercase tracking-wider">
                                             Pilih Tanggal Acara / Sesi Foto <span class="text-rose-500">*</span>
@@ -914,32 +938,124 @@
                                     </div>
                                 </div>
 
-                                <div class="md:col-span-2">
+                                <!-- SPESIFIKASI LOKASI PEMOTRETAN DENGAN PETA INTERAKTIF & GOOGLE MAPS -->
+                                <div class="pt-2">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <label class="block text-xs font-bold text-stone-900 uppercase tracking-wider">
+                                            Lokasi Pemotretan / Titik Temu <span class="text-rose-500">*</span>
+                                        </label>
+                                        <span class="text-[11px] text-[#255855] font-semibold flex items-center gap-1">
+                                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            </svg>
+                                            <span>Pin Peta &amp; Rekomendasi Spot</span>
+                                        </span>
+                                    </div>
+
+                                    <!-- Quick Spot Presets (Pilihan Populer Lombok) -->
+                                    <div class="mb-3">
+                                        <p class="text-[11px] text-stone-500 mb-1.5 font-medium">Pilihan Cepat Spot Favorit Lombok:</p>
+                                        <div class="flex flex-wrap gap-1.5 sm:gap-2" id="quick-location-presets">
+                                            <button type="button" data-lat="-8.5833" data-lng="116.1167" data-name="Studio Easy Project (Indoor Mataram)"
+                                                class="location-chip px-3 py-1.5 rounded-full text-xs font-medium bg-[#33736f] text-white border border-[#33736f] transition flex items-center gap-1 shadow-2xs">
+                                                <span>🏛️</span> <span>Studio Mataram</span>
+                                            </button>
+                                            <button type="button" data-lat="-8.5032" data-lng="116.0543" data-name="Pantai Senggigi, Lombok Barat"
+                                                class="location-chip px-3 py-1.5 rounded-full text-xs font-medium bg-white hover:bg-[#e8f4f3] hover:text-[#255855] border border-stone-200 text-stone-700 transition flex items-center gap-1 shadow-2xs">
+                                                <span>🏖️</span> <span>Pantai Senggigi</span>
+                                            </button>
+                                            <button type="button" data-lat="-8.9172" data-lng="116.3155" data-name="Bukit Merese &amp; Tanjung Aan, Lombok Tengah"
+                                                class="location-chip px-3 py-1.5 rounded-full text-xs font-medium bg-white hover:bg-[#e8f4f3] hover:text-[#255855] border border-stone-200 text-stone-700 transition flex items-center gap-1 shadow-2xs">
+                                                <span>⛰️</span> <span>Bukit Merese</span>
+                                            </button>
+                                            <button type="button" data-lat="-8.3614" data-lng="116.5276" data-name="Sembalun Savana, Lombok Timur"
+                                                class="location-chip px-3 py-1.5 rounded-full text-xs font-medium bg-white hover:bg-[#e8f4f3] hover:text-[#255855] border border-stone-200 text-stone-700 transition flex items-center gap-1 shadow-2xs">
+                                                <span>🌄</span> <span>Sembalun Rinjani</span>
+                                            </button>
+                                            <button type="button" data-lat="-8.3533" data-lng="116.0425" data-name="Gili Trawangan, Lombok Utara"
+                                                class="location-chip px-3 py-1.5 rounded-full text-xs font-medium bg-white hover:bg-[#e8f4f3] hover:text-[#255855] border border-stone-200 text-stone-700 transition flex items-center gap-1 shadow-2xs">
+                                                <span>🏝️</span> <span>Gili Trawangan</span>
+                                            </button>
+                                            <button type="button" data-lat="-8.8925" data-lng="116.2789" data-name="Pantai Kuta Mandalika, Lombok Tengah"
+                                                class="location-chip px-3 py-1.5 rounded-full text-xs font-medium bg-white hover:bg-[#e8f4f3] hover:text-[#255855] border border-stone-200 text-stone-700 transition flex items-center gap-1 shadow-2xs">
+                                                <span>🌴</span> <span>Kuta Mandalika</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Map Search & GPS Bar -->
+                                    <div class="flex flex-col sm:flex-row gap-2 mb-2">
+                                        <div class="relative flex-1">
+                                            <input type="text" id="map-search-input"
+                                                placeholder="Cari pantai, hotel, gedung, atau jalan di Lombok..."
+                                                class="w-full pl-9 pr-4 py-2.5 bg-[#FAF8F5] border border-stone-200 rounded-xl text-xs focus:ring-2 focus:ring-[#33736f] focus:bg-white focus:outline-none transition">
+                                            <svg class="w-4 h-4 text-stone-400 absolute left-3 top-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                            </svg>
+                                        </div>
+                                        <button type="button" id="map-search-btn"
+                                            class="px-4 py-2.5 bg-stone-800 hover:bg-stone-900 text-white rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer">
+                                            <span>Cari di Peta</span>
+                                        </button>
+                                        <button type="button" id="btn-use-my-gps"
+                                            class="px-3.5 py-2.5 bg-[#e8f4f3] hover:bg-[#d8ecea] text-[#255855] rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 border border-[#33736f]/30 cursor-pointer">
+                                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                            </svg>
+                                            <span>Lokasi Saya (GPS)</span>
+                                        </button>
+                                    </div>
+
+                                    <!-- Interactive Leaflet Map Container -->
+                                    <div class="relative rounded-2xl overflow-hidden border border-stone-200 shadow-inner bg-stone-100 mb-3" style="height: 270px; z-index: 10;">
+                                        <div id="booking-map" class="w-full h-full"></div>
+                                        <div class="absolute bottom-2.5 left-2.5 z-[400] bg-white/95 backdrop-blur-md px-3 py-1 rounded-lg text-[10px] text-stone-700 border border-stone-200/90 shadow-2xs pointer-events-none flex items-center gap-1.5">
+                                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                                            <span>Klik atau geser pin untuk tentukan titik tepat</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Active Pin Info Box & Google Maps Link Preview -->
+                                    <div id="location-selected-card" class="p-3.5 rounded-xl bg-[#FAF8F5] border border-stone-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2.5">
+                                        <div class="flex items-start gap-2.5">
+                                            <div class="w-8 h-8 rounded-lg bg-[#33736f] text-white flex items-center justify-center flex-shrink-0 text-sm font-bold shadow-xs">
+                                                📍
+                                            </div>
+                                            <div>
+                                                <p id="location-name-label" class="text-xs font-bold text-stone-900 leading-tight">Studio Easy Project (Indoor Mataram)</p>
+                                                <p id="location-coords-label" class="text-[11px] text-stone-500 font-mono mt-0.5">-8.583300, 116.116700</p>
+                                            </div>
+                                        </div>
+                                        <a id="gmaps-preview-link" href="https://www.google.com/maps?q=-8.583300,116.116700" target="_blank" rel="noopener noreferrer"
+                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-stone-50 border border-stone-300 rounded-lg text-[11px] font-semibold text-stone-700 transition shadow-2xs w-fit">
+                                            <svg class="w-3.5 h-3.5 text-rose-500" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z"/>
+                                            </svg>
+                                            <span>Buka di Google Maps ↗</span>
+                                        </a>
+                                    </div>
+
+                                    <!-- Synchronized text input for backend submission and custom details -->
+                                    <div>
+                                        <label class="block text-[11px] font-medium text-stone-500 mb-1">Nama Tempat &amp; Tautan Koordinat (Otomatis Tersinkron):</label>
+                                        <input name="location" id="booking-location-input"
+                                            value="{{ old('location', 'Studio Easy Project (Indoor Mataram) (https://maps.google.com/?q=-8.583300,116.116700)') }}"
+                                            type="text"
+                                            class="w-full px-4 py-2.5 bg-white border border-stone-200 rounded-xl text-xs focus:ring-2 focus:ring-[#33736f] focus:outline-none transition text-stone-800 font-medium"
+                                            placeholder="Contoh: Pantai Senggigi, Ruang Jasmine Hotel Santika, dll..." required>
+                                        <p class="text-[10px] text-stone-400 mt-1">Anda juga dapat menambahkan catatan detail lokasi (misal: "Dekat Cafe Sunset / Lobby Hotel").</p>
+                                    </div>
+                                </div>
+
+                                <!-- Detail Kebutuhan & Konsep -->
+                                <div>
                                     <label class="block text-xs font-semibold text-stone-700 mb-1.5">Detail Kebutuhan &amp; Konsep (Opsional)</label>
                                     <textarea name="details" rows="3"
                                         class="w-full px-4 py-3 bg-[#FAF8F5] border border-stone-200 rounded-xl text-sm focus:ring-2 focus:ring-[#33736f] focus:bg-white focus:outline-none transition"
                                         placeholder="Ceritakan gambaran konsep yang diinginkan, tema pakaian, atau pertanyaan khusus...">{{ old('details') }}</textarea>
                                 </div>
                             </div>
-
-                            <!-- Dynamic Price Card -->
-                            <div id="service-price-card" class="hidden mt-5 rounded-2xl bg-[#e8f4f3] border border-[#33736f]/30 p-5 transition-all">
-                                <div class="flex items-center justify-between flex-wrap gap-2">
-                                    <div>
-                                        <span class="text-[11px] font-bold uppercase tracking-wider text-[#33736f]">Paket Terpilih</span>
-                                        <h4 id="price-card-title" class="font-bold text-stone-900 text-base mt-0.5">-</h4>
-                                    </div>
-                                    <div class="text-right">
-                                        <span class="text-[11px] text-stone-500 font-medium">Estimasi Biaya</span>
-                                        <div id="price-card-total" class="font-editorial text-2xl font-bold text-[#33736f]">-</div>
-                                    </div>
-                                </div>
-                                <div class="mt-3 pt-3 border-t border-[#33736f]/20 flex items-center justify-between flex-wrap gap-2 text-xs text-stone-700">
-                                    <span>💡 Anjuran DP Pengunci Jadwal: <strong id="price-card-dp" class="text-emerald-800 font-bold">-</strong></span>
-                                    <span class="text-stone-500">Pelunasan di hari H pelaksanaan</span>
-                                </div>
-                            </div>
-                            <input type="hidden" name="amount" id="form-amount" value="{{ old('amount') }}">
                         </div>
 
                         <!-- Step 3: Metode Pembayaran -->
@@ -1038,13 +1154,13 @@
                                         <div>
                                             <span class="text-xs font-bold text-blue-900">Rekening Bank BCA</span>
                                             <div class="flex items-center gap-3 mt-1.5">
-                                                <span class="font-mono text-2xl font-bold tracking-wider text-stone-900" id="rek-bca">8735019281</span>
-                                                <button type="button" onclick="copyToClipboard('8735019281', this)"
+                                                <span class="font-mono text-2xl font-bold tracking-wider text-stone-900" id="rek-bca">7255320190</span>
+                                                <button type="button" onclick="copyToClipboard('7255320190', this)"
                                                     class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-stone-300 rounded-lg text-xs font-semibold text-stone-700 hover:bg-stone-50 transition active:scale-95 shadow-xs">
                                                     <span>Salin Rekening</span>
                                                 </button>
                                             </div>
-                                            <p class="text-xs text-stone-600 mt-1">Atas Nama: <strong class="text-stone-900">EASY PROJECT STUDIO</strong></p>
+                                            <p class="text-xs text-stone-600 mt-1">Atas Nama: <strong class="text-stone-900">HUSNI UTAMI</strong></p>
                                         </div>
                                         <div class="text-xs text-stone-500 bg-white/80 p-3 rounded-xl border border-stone-200/60 max-w-xs">
                                             Silakan transfer nominal DP (disarankan minimal Rp 500.000) atau pelunasan ke nomor rekening di atas.
@@ -1094,31 +1210,26 @@
 
                                 <!-- QRIS Info -->
                                 <div id="info-qris" class="bank-detail-item hidden">
-                                    <div class="flex flex-col sm:flex-row items-center gap-5">
-                                        <div class="bg-white p-3 rounded-2xl border border-stone-200 shadow-sm flex flex-col items-center">
-                                            <div class="w-32 h-32 bg-stone-900 rounded-xl p-2 flex flex-col items-center justify-between text-white text-[9px] font-mono">
-                                                <div class="w-full flex justify-between">
-                                                    <div class="w-7 h-7 border-2 border-white rounded flex items-center justify-center font-bold">QR</div>
-                                                    <span class="text-[8px] font-bold text-rose-400">QRIS</span>
-                                                    <div class="w-7 h-7 border-2 border-white rounded flex items-center justify-center font-bold">QR</div>
-                                                </div>
-                                                <div class="text-center font-sans font-bold text-[11px] text-amber-300">EASY PROJECT</div>
-                                                <div class="w-full flex justify-between">
-                                                    <div class="w-7 h-7 border-2 border-white rounded"></div>
-                                                    <div class="w-12 h-3 bg-white/20 rounded flex items-center justify-center text-[7px]">NMID: 0092</div>
-                                                    <div class="w-3 h-3 bg-white/30 rounded"></div>
-                                                </div>
-                                            </div>
-                                            <span class="text-[10px] text-stone-500 mt-2 font-medium">BCA, GoPay, OVO, DANA</span>
-                                        </div>
-                                        <div class="flex-1 text-xs text-stone-600 space-y-1.5">
-                                            <h4 class="font-bold text-stone-900 text-sm">Scan Melalui Mobile Banking / E-Wallet</h4>
-                                            <p>1. Buka aplikasi m-Banking atau e-Wallet favorit Anda.</p>
-                                            <p>2. Pilih menu <strong>Scan QRIS</strong> dan masukkan nominal DP.</p>
-                                            <p>3. Tangkap layar (screenshot) bukti pembayaran dan unggah di form di bawah ini.</p>
-                                        </div>
-                                    </div>
-                                </div>
+    <div class="flex flex-col sm:flex-row items-center gap-5">
+        <div class="bg-white p-3 rounded-2xl border border-stone-200 shadow-sm flex flex-col items-center">
+            
+            <!-- GAMBAR QRIS ASLI -->
+            <img src="{{ asset('images/qris.jpeg') }}" 
+                 alt="QRIS Easy Project Studio" 
+                 class="w-48 h-auto object-contain rounded-xl border border-stone-100">
+
+            <span class="text-[10px] text-stone-500 mt-2 font-medium">BCA, GoPay, OVO, DANA, ShopeePay</span>
+        </div>
+        
+        <div class="flex-1 text-xs text-stone-600 space-y-1.5">
+            <h4 class="font-bold text-stone-900 text-sm">Scan Melalui Mobile Banking / E-Wallet</h4>
+            <p>1. Buka aplikasi m-Banking atau e-Wallet favorit Anda.</p>
+            <p>2. Pilih menu <strong>Scan QRIS</strong> dan scan kode di samping/atas.</p>
+            <p>3. Masukkan nominal pembayaran DP atau pelunasan.</p>
+            <p>4. Tangkap layar (screenshot) bukti pembayaran dan unggah di form di bawah ini.</p>
+        </div>
+    </div>
+</div>
 
                                 <!-- Cash Info -->
                                 <div id="info-cash" class="bank-detail-item hidden">
@@ -1834,6 +1945,234 @@
 
             // Render awal
             renderCalendar();
+        })();
+    </script>
+
+    <!-- Leaflet JS for Location Map Pinning -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script>
+        // ==========================================
+        // INTERACTIVE LOCATION PICKER (LEAFLET + OSM + GMAPS)
+        // ==========================================
+        (function() {
+            const mapElement = document.getElementById('booking-map');
+            const locationInput = document.getElementById('booking-location-input');
+            const nameLabel = document.getElementById('location-name-label');
+            const coordsLabel = document.getElementById('location-coords-label');
+            const gmapsLink = document.getElementById('gmaps-preview-link');
+            const searchInput = document.getElementById('map-search-input');
+            const searchBtn = document.getElementById('map-search-btn');
+            const gpsBtn = document.getElementById('btn-use-my-gps');
+            const presetButtons = document.querySelectorAll('.location-chip');
+
+            if (!mapElement || typeof L === 'undefined') return;
+
+            // Default: Studio Easy Project, Mataram, Lombok
+            let currentLat = -8.5833;
+            let currentLng = 116.1167;
+            let currentName = 'Studio Easy Project (Indoor Mataram)';
+
+            // Cek jika ada input old('location') dengan koordinat
+            if (locationInput && locationInput.value) {
+                const match = locationInput.value.match(/q=([-\d.]+),([-\d.]+)/);
+                if (match) {
+                    currentLat = parseFloat(match[1]);
+                    currentLng = parseFloat(match[2]);
+                    const namePart = locationInput.value.split('(')[0].trim();
+                    if (namePart) currentName = namePart;
+                }
+            }
+
+            const map = L.map('booking-map', {
+                center: [currentLat, currentLng],
+                zoom: 13,
+                scrollWheelZoom: false
+            });
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(map);
+
+            // Custom elegant pin marker
+            const pinIcon = L.divIcon({
+                className: 'custom-map-pin',
+                html: `<div style="background-color:#234E4B;color:white;width:34px;height:34px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(0,0,0,0.25);border:2.5px solid white;"><span style="transform:rotate(45deg);font-size:16px;">📍</span></div>`,
+                iconSize: [34, 34],
+                iconAnchor: [17, 34],
+                popupAnchor: [0, -34]
+            });
+
+            let marker = L.marker([currentLat, currentLng], {
+                draggable: true,
+                icon: pinIcon
+            }).addTo(map);
+
+            function updateLocation(lat, lng, name, shouldPan = true, shouldReverseGeocode = false) {
+                currentLat = lat;
+                currentLng = lng;
+                if (name) currentName = name;
+
+                marker.setLatLng([lat, lng]);
+                if (shouldPan) {
+                    map.panTo([lat, lng]);
+                }
+
+                const gmapsUrl = `https://www.google.com/maps?q=${lat.toFixed(6)},${lng.toFixed(6)}`;
+                if (coordsLabel) coordsLabel.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                if (nameLabel) nameLabel.textContent = currentName;
+                if (gmapsLink) gmapsLink.href = gmapsUrl;
+
+                if (locationInput) {
+                    locationInput.value = `${currentName} (${gmapsUrl})`;
+                }
+
+                if (shouldReverseGeocode) {
+                    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data && data.display_name) {
+                                const parts = data.display_name.split(',').map(s => s.trim());
+                                const shortAddr = parts.slice(0, 3).join(', ');
+                                currentName = shortAddr;
+                                if (nameLabel) nameLabel.textContent = shortAddr;
+                                if (locationInput) {
+                                    locationInput.value = `${shortAddr} (${gmapsUrl})`;
+                                }
+                            }
+                        })
+                        .catch(err => console.log('Geocoding error:', err));
+                }
+            }
+
+            // Inisialisasi awal
+            updateLocation(currentLat, currentLng, currentName, false, false);
+
+            // Klik pada peta untuk pindahkan pin
+            map.on('click', function(e) {
+                updateLocation(e.latlng.lat, e.latlng.lng, 'Lokasi Pin Peta Terpilih', true, true);
+                presetButtons.forEach(b => {
+                    b.classList.remove('bg-[#33736f]', 'text-white', 'border-[#33736f]');
+                    b.classList.add('bg-white', 'text-stone-700', 'border-stone-200');
+                });
+            });
+
+            // Drag marker selesai
+            marker.on('dragend', function() {
+                const pos = marker.getLatLng();
+                updateLocation(pos.lat, pos.lng, 'Lokasi Pin Peta Terpilih', true, true);
+            });
+
+            // Tombol Quick Presets
+            presetButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const lat = parseFloat(this.getAttribute('data-lat'));
+                    const lng = parseFloat(this.getAttribute('data-lng'));
+                    const name = this.getAttribute('data-name');
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        map.setView([lat, lng], 14);
+                        updateLocation(lat, lng, name, true, false);
+
+                        presetButtons.forEach(b => {
+                            b.classList.remove('bg-[#33736f]', 'text-white', 'border-[#33736f]');
+                            b.classList.add('bg-white', 'text-stone-700', 'border-stone-200');
+                        });
+                        this.classList.remove('bg-white', 'text-stone-700', 'border-stone-200');
+                        this.classList.add('bg-[#33736f]', 'text-white', 'border-[#33736f]');
+                    }
+                });
+            });
+
+            // Pencarian Tempat / Alamat
+            function handleSearch() {
+                if (!searchInput) return;
+                const query = searchInput.value.trim();
+                if (!query) return;
+
+                searchBtn.disabled = true;
+                const originalText = searchBtn.innerHTML;
+                searchBtn.innerHTML = `<span>Mencari...</span>`;
+
+                const searchQuery = query.toLowerCase().includes('lombok') ? query : `${query}, Lombok, Indonesia`;
+                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1`)
+                    .then(res => res.json())
+                    .then(results => {
+                        searchBtn.disabled = false;
+                        searchBtn.innerHTML = originalText;
+                        if (results && results.length > 0) {
+                            const place = results[0];
+                            const lat = parseFloat(place.lat);
+                            const lon = parseFloat(place.lon);
+                            map.setView([lat, lon], 14);
+                            const cleanName = query + ' (' + (place.display_name.split(',')[0] || '') + ')';
+                            updateLocation(lat, lon, cleanName, true, false);
+                        } else {
+                            alert('Lokasi tidak ditemukan. Coba geser pin manual pada peta.');
+                        }
+                    })
+                    .catch(err => {
+                        searchBtn.disabled = false;
+                        searchBtn.innerHTML = originalText;
+                        alert('Gagal mencari lokasi. Silakan klik langsung di peta.');
+                    });
+            }
+
+            if (searchBtn) searchBtn.addEventListener('click', handleSearch);
+            if (searchInput) {
+                searchInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleSearch();
+                    }
+                });
+            }
+
+            // Tombol GPS Otomatis
+            if (gpsBtn) {
+                gpsBtn.addEventListener('click', function() {
+                    if (!navigator.geolocation) {
+                        alert('Browser Anda tidak mendukung deteksi lokasi otomatis.');
+                        return;
+                    }
+                    const originalGps = gpsBtn.innerHTML;
+                    gpsBtn.disabled = true;
+                    gpsBtn.innerHTML = `<span>Mendeteksi...</span>`;
+
+                    navigator.geolocation.getCurrentPosition(
+                        function(pos) {
+                            gpsBtn.disabled = false;
+                            gpsBtn.innerHTML = originalGps;
+                            const lat = pos.coords.latitude;
+                            const lng = pos.coords.longitude;
+                            map.setView([lat, lng], 15);
+                            updateLocation(lat, lng, 'Lokasi GPS Anda Saat Ini', true, true);
+                        },
+                        function(err) {
+                            gpsBtn.disabled = false;
+                            gpsBtn.innerHTML = originalGps;
+                            alert('Tidak dapat mendeteksi lokasi GPS otomatis. Pastikan izin akses lokasi diizinkan di browser Anda.');
+                        },
+                        { enableHighAccuracy: true, timeout: 8000 }
+                    );
+                });
+            }
+
+            // Pastikan Leaflet tile ter-render sempurna saat scroll/tampil
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 500);
+
+            const bookingSection = document.getElementById('booking');
+            if (bookingSection && 'IntersectionObserver' in window) {
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            map.invalidateSize();
+                        }
+                    });
+                }, { threshold: 0.1 });
+                observer.observe(bookingSection);
+            }
         })();
     </script>
 </body>
